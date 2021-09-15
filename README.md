@@ -1,2 +1,2 @@
-# scientoverse
-This repo contains verbs (functions) to help scientometric analysis.  
+# tidyscience
+This repo contains verbs (functions) to help scientometric analysis.

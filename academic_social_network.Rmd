@@ -1,0 +1,67 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(tidygraph)
+library(igraph)
+library(bibliometrix)
+```
+
+# Data getting
+
+```{r}
+scopus <- 
+  convert2df("scientometrics.bib", 
+             dbsource = "scopus", 
+             format = "bibtex")
+```
+
+# Data cleaning
+
+```{r}
+scopus_cleaned <- 
+  scopus |> 
+  select(SR, CR) |> 
+  na.omit()  |> 
+  separate_rows(CR, sep = "; ") |> 
+  mutate(year = str_extract(CR, "\\([0-9]{4}\\)"),
+         year = str_remove_all(year, "[\\(\\)]")) |> 
+  na.omit() |> 
+  mutate(authors = str_extract(CR, ".*\\([0-9]{4}\\)"),
+         authors = str_extract(authors, ".*\\.,"),
+         authors = gsub("([^,]+,[^,]+),", "\\1;", authors),
+         authors = str_sub(authors, 1, nchar(authors)-1)) |>
+  mutate(title = str_extract(CR, ".*\\([0-9]{4}\\)"), 
+         title = str_remove(title, "\\([0-9]{4}\\)"),
+         title = str_remove(title, ".*,")) |> 
+  mutate(title_1 = str_extract(CR, ".*\\([0-9]{4}\\)"),
+         title_1 = str_remove(title, "\\([0-9]{4}\\)"))
+  
+```
+
+Types of references in Scopus (some)
+
+```{r}
+ref_type_1 <- 
+  "WISNER, B., GAILLARD, J.C., KELMAN, I., (2012) THE ROUTLEDGE HANDBOOK OF HAZARDS AND DISASTER RISK REDUCTION, 875P. , ROUTLEDGE, TAYLOR AND FRANCIS GROUP: LONDON, UK"
+
+ref_type_2 <- 
+  "(2021) WHAT IS A SYSTEMATIC REVIEW?, , HTTP://WWW-COCHRANELIBRARY-COM.LUISAMIGO.PROXYBK.COM/ABOUT/ABOUT-COCHRANESYSTEMATIC-REVIEWS.HTML"
+
+ref_type_3 <- 
+  "(1978) SCIENTOMETRICS, , M. T., BECK, G. M., DOBROV, E., GARFIELD, D., DE SOLLA PRICE, T., BRAUN, ELSEVIER SCIENCE PUBLISHERS B. V., AMSTERDAM-OXFORD-NEW YORK, AKADMIAI KIAD, BUDAPEST"
+
+ref_type_4 <- 
+  "HESS, D J, (1997) SCIENCE STUDIES: AN ADVANCED INTRODUCTION, , (NYU PRESS"
+
+ref_type_5 <- 
+  "GLNZEL, W, (2014) CURRICULUM VITAE, , HTTPS://FEB-KULEUVEN-BE.LUISAMIGO.PROXYBK.COM/USERPAGECV/U0039966/CV_WG_2014.PDF, RIVERSIDE, (ACCESSED ON 12 MARCH 2021)"
+
+ref_type_6 <- 
+  "YELLOW DRAGON IN THE ORANGE GROVE: DANGEROUS BACTERIAL INFECTION IS DESTROYING ENTIRE CITRUS PLANTATIONS (2015) RESEARCH THE BAYER SCIENTIFIC MAGAZINE, 28, PP. 44-47. , BAYER"
+
+ref_type_7 <- "DOI  SONG, Z, XU, Y, BAO, L, ZHANG, L, YU, P, QU, Y, ZHU, H, QIN, C., FROM SARS TO MERS,THRUSTING CORONAVIRUSES INTO THE SPOTLIGHT (2019) VIRUSES, 11 (1), P. 59. , 37..,"
+```

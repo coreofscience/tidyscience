@@ -39,29 +39,227 @@ scopus_cleaned <-
          title = str_remove(title, ".*,")) |> 
   mutate(title_1 = str_extract(CR, ".*\\([0-9]{4}\\)"),
          title_1 = str_remove(title, "\\([0-9]{4}\\)"))
-  
+
 ```
 
 Types of references in Scopus (some)
 
 ```{r}
 ref_type_1 <- 
-  "WISNER, B., GAILLARD, J.C., KELMAN, I., (2012) THE ROUTLEDGE HANDBOOK OF HAZARDS AND DISASTER RISK REDUCTION, 875P. , ROUTLEDGE, TAYLOR AND FRANCIS GROUP: LONDON, UK"
+  "ATHAR, A., TEUFEL, S., CONTEXT-ENHANCED CITATION SENTIMENT DETECTION (2012) IN PROCEEDINGS OF THE 2012 CONFERENCE OF THE NORTH AMERICAN CHAPTER OF THE ASSOCIATION FOR COMPUTATIONAL LINGUISTICS: HUMAN LANGUAGE TECHNOLOGIES, PP. 597-601"
 
 ref_type_2 <- 
-  "(2021) WHAT IS A SYSTEMATIC REVIEW?, , HTTP://WWW-COCHRANELIBRARY-COM.LUISAMIGO.PROXYBK.COM/ABOUT/ABOUT-COCHRANESYSTEMATIC-REVIEWS.HTML"
+  "CRONIN, B., (1984) THE CITATION PROCESS. THE ROLE AND SIGNIFICANCE OF CITATIONS IN SCIENTIFIC COMMUNICATION, 103, , TAYLOR GRAHAM PUBLISHING"
 
 ref_type_3 <- 
-  "(1978) SCIENTOMETRICS, , M. T., BECK, G. M., DOBROV, E., GARFIELD, D., DE SOLLA PRICE, T., BRAUN, ELSEVIER SCIENCE PUBLISHERS B. V., AMSTERDAM-OXFORD-NEW YORK, AKADMIAI KIAD, BUDAPEST"
+  "(2021) WHAT IS A SYSTEMATIC REVIEW?, , HTTP://WWW-COCHRANELIBRARY-COM.LUISAMIGO.PROXYBK.COM/ABOUT/ABOUT-COCHRANESYSTEMATIC-REVIEWS.HTML"
 
 ref_type_4 <- 
-  "HESS, D J, (1997) SCIENCE STUDIES: AN ADVANCED INTRODUCTION, , (NYU PRESS"
+  "COLE, J.R., COLE, S., THE ORTEGA HYPOTHESIS: CITATION ANALYSIS SUGGESTS THAT ONLY A FEW SCIENTISTS CONTRIBUTE TO SCIENTIFIC PROGRESS (1972) SCIENCE, 178 (4059), PP. 368-375"
 
-ref_type_5 <- 
-  "GLNZEL, W, (2014) CURRICULUM VITAE, , HTTPS://FEB-KULEUVEN-BE.LUISAMIGO.PROXYBK.COM/USERPAGECV/U0039966/CV_WG_2014.PDF, RIVERSIDE, (ACCESSED ON 12 MARCH 2021)"
+# ref_type_1 <- 
+#   "WISNER, B., GAILLARD, J.C., KELMAN, I., (2012) THE ROUTLEDGE HANDBOOK OF HAZARDS AND DISASTER RISK REDUCTION, 875P. , ROUTLEDGE, TAYLOR AND FRANCIS GROUP: LONDON, UK"
+# 
+# ref_type_2 <- 
+#   "(2021) WHAT IS A SYSTEMATIC REVIEW?, , HTTP://WWW-COCHRANELIBRARY-COM.LUISAMIGO.PROXYBK.COM/ABOUT/ABOUT-COCHRANESYSTEMATIC-REVIEWS.HTML"
+# 
+# ref_type_3 <- 
+#   "(1978) SCIENTOMETRICS, , M. T., BECK, G. M., DOBROV, E., GARFIELD, D., DE SOLLA PRICE, T., BRAUN, ELSEVIER SCIENCE PUBLISHERS B. V., AMSTERDAM-OXFORD-NEW YORK, AKADMIAI KIAD, BUDAPEST"
+# 
+# ref_type_4 <- 
+#   "HESS, D J, (1997) SCIENCE STUDIES: AN ADVANCED INTRODUCTION, , (NYU PRESS"
+# 
+# ref_type_5 <- 
+#   "GLNZEL, W, (2014) CURRICULUM VITAE, , HTTPS://FEB-KULEUVEN-BE.LUISAMIGO.PROXYBK.COM/USERPAGECV/U0039966/CV_WG_2014.PDF, RIVERSIDE, (ACCESSED ON 12 MARCH 2021)"
+# 
+# ref_type_6 <- 
+#   "YELLOW DRAGON IN THE ORANGE GROVE: DANGEROUS BACTERIAL INFECTION IS DESTROYING ENTIRE CITRUS PLANTATIONS (2015) RESEARCH THE BAYER SCIENTIFIC MAGAZINE, 28, PP. 44-47. , BAYER"
+# 
+# ref_type_7 <- "DOI  SONG, Z, XU, Y, BAO, L, ZHANG, L, YU, P, QU, Y, ZHU, H, QIN, C., FROM SARS TO MERS,THRUSTING CORONAVIRUSES INTO THE SPOTLIGHT (2019) VIRUSES, 11 (1), P. 59. , 37..,"
 
-ref_type_6 <- 
-  "YELLOW DRAGON IN THE ORANGE GROVE: DANGEROUS BACTERIAL INFECTION IS DESTROYING ENTIRE CITRUS PLANTATIONS (2015) RESEARCH THE BAYER SCIENTIFIC MAGAZINE, 28, PP. 44-47. , BAYER"
+# ref_type_8 <- 
+#   "HAI, D., XU, J., DUAN, Z., CHEN, C., EFFECTS OF UNDERGROUND LOGISTICS SYSTEM ON URBAN FREIGHT TRAFFIC: A CASE STUDY IN SHANGHAI, CHINA (2020) J. CLEAN. PROD, 260, P. 121019. , CROSSREF"
 
-ref_type_7 <- "DOI  SONG, Z, XU, Y, BAO, L, ZHANG, L, YU, P, QU, Y, ZHU, H, QIN, C., FROM SARS TO MERS,THRUSTING CORONAVIRUSES INTO THE SPOTLIGHT (2019) VIRUSES, 11 (1), P. 59. , 37..,"
+# ref_type_2 <-
+#   "CRONIN, B., (1984) THE CITATION PROCESS. THE ROLE AND SIGNIFICANCE OF CITATIONS IN SCIENTIFIC COMMUNICATION, 103, , TAYLOR GRAHAM PUBLISHING"
+
+# ref_type_3 <- 
+#   "(2021) WHAT IS A SYSTEMATIC REVIEW?, , HTTP://WWW-COCHRANELIBRARY-COM.LUISAMIGO.PROXYBK.COM/ABOUT/ABOUT-COCHRANESYSTEMATIC-REVIEWS.HTML"
+# 
+# ref_type_4 <- 
+#   "COLE, J.R., COLE, S., THE ORTEGA HYPOTHESIS: CITATION ANALYSIS SUGGESTS THAT ONLY A FEW SCIENTISTS CONTRIBUTE TO SCIENTIFIC PROGRESS (1972) SCIENCE, 178 (4059), PP. 368-375"
 ```
+
+Creating the SR_ref
+
+```{r}
+authors_1 <- "AKER RS;YACEF K"
+authors_2 <- "BECK JE;ARROYO I;WOOLF BP;BEAL CR"
+authors_3 <- "FLETCHER JD"
+
+str_extract(authors_3, ".*;") # just 1 works
+gsub("^(.*?);.*", "\\1", authors_3)
+
+```
+
+
+Journals data 
+
+```{r}
+
+ref_type_1 <- 
+  "ATHAR, A., TEUFEL, S., CONTEXT-ENHANCED CITATION SENTIMENT DETECTION (2012) IN PROCEEDINGS OF THE 2012 CONFERENCE OF THE NORTH AMERICAN CHAPTER OF THE ASSOCIATION FOR COMPUTATIONAL LINGUISTICS: HUMAN LANGUAGE TECHNOLOGIES, PP. 597-601"
+
+ref_type_1_df <- 
+  tibble(CR = ref_type_1) |> 
+  mutate(TI = str_remove(CR, ".*\\([0-9]{4}\\)"), 
+         TI = str_remove(TI, ", .*"),
+         TI = str_trim(TI))
+
+"COLE, J.R., COLE, S., THE ORTEGA HYPOTHESIS: CITATION ANALYSIS SUGGESTS THAT ONLY A FEW SCIENTISTS CONTRIBUTE TO SCIENTIFIC PROGRESS (1972) SCIENCE, 178 (4059), PP. 368-375"
+
+"BORNMANN, L., DANIEL, H., WHAT DO CITATION COUNTS MEASURE? A REVIEW OF STUDIES ON CITING BEHAVIOR (2008) JOURNAL OF DOCUMENTATION, 64 (1), PP. 45-80"
+```
+
+
+```{r}
+ref_type_2 <- 
+  "CRONIN, B., (1984) THE CITATION PROCESS. THE ROLE AND SIGNIFICANCE OF CITATIONS IN SCIENTIFIC COMMUNICATION, 103, , TAYLOR GRAHAM PUBLISHING"
+
+ref_type_2 <- 
+  "ACKLAND, R., (2013) WEB SOCIAL SCIENCE: CONCEPTS, DATA AND TOOLS FOR SOCIAL SCIENTISTS IN THE DIGITAL AGE, , THOUSAND OAKS, CA: SAGE"
+
+ref_type_2_df <- 
+  tibble(CR = ref_type_2) |> 
+  mutate(TI = str_remove(CR, ".*\\([0-9]{4}\\)"), 
+         TI = str_remove(TI, ", .*"),
+         TI = str_trim(TI))
+```
+
+
+Solutions of different ref types 
+
+```{r}
+ref_type_2 <- 
+  tibble(CR = "CRONIN, B., (1984) THE CITATION PROCESS. THE ROLE AND SIGNIFICANCE OF CITATIONS IN SCIENTIFIC COMMUNICATION, 103, , TAYLOR GRAHAM PUBLISHING")
+
+str_detect(ref_type_2,"\\., \\([0-9]\\)")
+
+str_detect(ref_type_1,"\\., \\(")
+
+str_detect(ref_type_2, " \\([0-9]{4}\\) ")
+
+ref_type_2_df <- 
+  ref_type_2 |> 
+  mutate(year = str_extract(CR, "\\([0-9]{4}\\)"),
+         year = str_remove_all(year, "[\\(\\)]")) |> 
+  mutate(authors = str_extract(CR, ".*\\([0-9]{4}\\)"),
+         authors = str_extract(authors, ".*\\.,"),
+         authors = gsub("([^,]+,[^,]+),", "\\1;", authors),
+         authors = str_sub(authors, 1, nchar(authors)-1)) |> 
+  mutate(type_ref = if_else(str_detect(CR, 
+                                       "\\., \\("), 9, 
+                            if_else(str_detect(CR, 
+                                       "^\\([0-9]{4}\\)"), 10, 1))) |>
+  mutate(title = str_extract(CR, "\\([0-9]{4}\\).*"), 
+         title = str_remove(title, "\\([0-9]{4}\\)"),
+         title = str_remove(title, ", [0-9].*"),
+         title = str_trim(title))
+
+scopus_cleaned |> 
+  filter(type_ref == 2) |> 
+  mutate(TI = str_extract(CR, "\\([0-9]{4}\\).*"),
+         TI = str_remove(TI, "\\([0-9]{4}\\)"),
+         TI = str_remove(TI, ", [0-9].*"),
+         TI = str_trim(TI))
+
+"CRONIN, B., (1984) THE CITATION PROCESS. THE ROLE AND SIGNIFICANCE OF CITATIONS IN SCIENTIFIC COMMUNICATION, 103, , TAYLOR GRAHAM PUBLISHING"
+
+"CRONIN, B., (1984) THE CITATION PROCESS. THE ROLE AND SIGNIFICANCE OF CITATIONS IN SCIENTIFIC COMMUNICATION, 103, , TAYLOR GRAHAM PUBLISHING"
+```
+
+
+```{r}
+ref_type_4_df <- 
+  tibble(CR = "COLE, J.R., COLE, S., THE ORTEGA HYPOTHESIS: CITATION ANALYSIS SUGGESTS THAT ONLY A FEW SCIENTISTS CONTRIBUTE TO SCIENTIFIC PROGRESS (1972) SCIENCE, 178 (4059), PP. 368-375")
+
+ref_type_4_done <- 
+  ref_type_11_df |> 
+  mutate(TI = str_extract(CR, ".* \\([0-9]{4}\\) "),
+         TI = str_remove(TI, "\\([0-9]{4}\\)"),
+         TI = str_remove(TI, ".*\\., "),
+         TI = str_trim(TI))
+
+str_detect(ref_type_4, " \\([0-9]{4}\\), ")
+
+```
+
+
+```{r}
+ref_type_3_df <- 
+  tibble(CR = "(2021) WHAT IS A SYSTEMATIC REVIEW?, , HTTP://WWW-COCHRANELIBRARY-COM.LUISAMIGO.PROXYBK.COM/ABOUT/ABOUT-COCHRANESYSTEMATIC-REVIEWS.HTML")
+
+ref_type_3_done <- 
+  ref_type_3_df |> 
+  mutate(year = str_extract(CR, "\\([0-9]{4}\\)"),
+         year = str_remove_all(year, "[\\(\\)]")) |> 
+  mutate(authors = str_extract(CR, ".*\\([0-9]{4}\\)"),
+         authors = str_extract(authors, ".*\\.,"),
+         authors = gsub("([^,]+,[^,]+),", "\\1;", authors),
+         authors = str_sub(authors, 1, nchar(authors)-1)) |>
+  mutate(title = str_remove(CR, "\\([0-9]{4}\\)"),
+         title = str_remove(title, ", ,.*"),
+         title = str_trim(title))
+```
+
+
+
+
+
+```{r}
+ref_type_8 <- 
+  tibble(CR = "HAI, D., XU, J., DUAN, Z., CHEN, C., EFFECTS OF UNDERGROUND LOGISTICS SYSTEM ON URBAN FREIGHT TRAFFIC: A CASE STUDY IN SHANGHAI, CHINA (2020) J. CLEAN. PROD, 260, P. 121019. , CROSSREF")
+
+ref_type_8_df <- 
+  ref_type_8 |> 
+  mutate(year = str_extract(CR, "\\([0-9]{4}\\)"),
+         year = str_remove_all(year, "[\\(\\)]")) |> 
+  mutate(authors = str_extract(CR, ".*\\([0-9]{4}\\)"),
+         authors = str_extract(authors, ".*\\.,"),
+         authors = gsub("([^,]+,[^,]+),", "\\1;", authors),
+         authors = str_sub(authors, 1, nchar(authors)-1)) |> 
+  mutate(title = str_extract(CR, ".*\\([0-9]{4}\\)"), 
+         title = str_remove(title, "\\([0-9]{4}\\)"),
+         title = str_remove(title, ".*\\., "),
+         title = str_trim(title))
+```
+
+
+Merging both datasets
+
+```{r}
+scopus |> names()
+```
+```{r}
+scopus_cleaned |> names()
+```
+
+# Testing
+
+```{r}
+scopus_cleaned |> 
+  select(SR, SR_ref) |> 
+  na.omit() |> 
+  graph.data.frame(directed = TRUE) |> 
+  simplify() |> 
+  as_tbl_graph() |> 
+  activate(nodes) |> 
+  mutate(out_degree = centrality_degree(mode = "out"),
+         in_degree = centrality_degree(mode = "in"),
+         components = group_components()) |> 
+  filter(components == 1) |> 
+  filter(!(out_degree == 0 & in_degree == 1)) |> 
+  as.igraph() |> 
+  write_graph("scopus_cleaned.graphml", "graphml")
+```
+

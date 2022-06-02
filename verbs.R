@@ -125,48 +125,45 @@ get_references <- function(data) {
     }
 
   }
-    # add_column(DE = NA, .after = "AU",
-    #            ID = NA,
-    #            C1 = NA,
-    #            AB = NA,
-    #            PA = NA,
-    #            AR = NA,
-    #            chemicals_cas = NA,
-    #            coden = NA,
-    #            RP = NA,
-    #            DT = NA,
-    #            DI = NA,
-    #            BE = NA,
-    #            FU = NA,
-    #            BN = NA,
-    #            SN = NA,
-    #            SO = NA,
-    #            LA = NA,
-    #            TC = NA,
-    #            PN = NA,
-    #            page_count = NA,
-    #            PP = NA,
-    #            PU = NA,
-    #            PM = NA,
-    #            DB = NA,
-    #            sponsors = NA,
-    #            url = NA,
-    #            VL = NA,
-    #            FX = NA,
-    #            AU_UN = NA,
-    #            AU1_UN = NA,
-    #            AU_UN_NR = NA,
-    #            SR_FULL = NA) |>
-    # select(AU, DE, ID, C1, CR, JI, AB, PA, AR, chemicals_cas,
-    #        coden, RP, DT, DI, BE, FU, BN, SN, SO,
-    #        LA, TC, PN, page_count, PP, PU, PM, DB, sponsors, url,
-    #        VL, PY, FX, AU_UN, AU1_UN, AU_UN_NR, SR_FULL, SR)
 
-  # preprossed_data <-
-  #   data |>
-  #   bind_rows(scopus_cleaned )
+  # Finding duplicate titles in references with different SR_ref
+  TI_ref_duplicates <-
+    references_df |>
+    filter(ref_type == 1) |>
+    group_by(TI, SR_ref) |>
+    count(TI, sort = TRUE) |>
+    filter(n > 1) |>
+    ungroup() |>
+    select(TI) |>
+    group_by(TI) |>
+    count(TI, sort = TRUE) |>
+    filter(n > 1) |>
+    select(TI)
 
-  return(references_df = references_df_1)
+  # Create the
+
+  df_1 <- references_df
+
+  for (i in TI_ref_duplicates$TI) {
+
+    SR_ref_1 <-
+      references_df |>
+      filter(TI == i) |>
+      select(SR_ref) |>
+      group_by(SR_ref) |>
+      count(SR_ref, sort = TRUE) |>
+      ungroup() |>
+      slice(1) |>
+      select(SR_ref)
+
+    df_1 <-
+      df_1 |>
+      mutate(SR_ref = if_else(TI == i, SR_ref_1$SR_ref,
+                              SR_ref))
+
+  }
+
+  return(references_df = df_1)
 }
 
 

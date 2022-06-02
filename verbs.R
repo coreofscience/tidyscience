@@ -94,7 +94,7 @@ get_references <- function(data) {
            SR_ref = str_c(SR_ref, ", ", PY, ", ", JI, sep = "")) |>
     select(SR, SR_ref, TI, AU, JI, PY,
            ref_type = type_ref, CR_ref = CR)
-
+# Finding right SR_ref in main dataset
   references_df_1 <- tibble()
 
   list_ref_TI <-
@@ -110,7 +110,6 @@ get_references <- function(data) {
       filter(TI == i)
 
     if (length(df_1$TI) != 0) {
-
 
       references_df$SR_ref[references_df$TI == df_1$TI] <- df_1$SR
 
@@ -128,15 +127,14 @@ get_references <- function(data) {
 
   # Finding duplicate titles in references with different SR_ref
   TI_ref_duplicates <-
-    references_df |>
+    references_df_1 |>
     filter(ref_type == 1) |>
     group_by(TI, SR_ref) |>
     count(TI, sort = TRUE) |>
-    filter(n > 1) |>
     ungroup() |>
     select(TI) |>
     group_by(TI) |>
-    count(TI, sort = TRUE) |>
+    count(TI) |>
     filter(n > 1) |>
     select(TI)
 
@@ -147,7 +145,7 @@ get_references <- function(data) {
   for (i in TI_ref_duplicates$TI) {
 
     SR_ref_1 <-
-      references_df |>
+      references_df_1 |>
       filter(TI == i) |>
       select(SR_ref) |>
       group_by(SR_ref) |>

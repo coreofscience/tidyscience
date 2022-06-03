@@ -93,8 +93,9 @@ get_references <- function(data) {
     mutate(SR_ref = gsub("^(.*?);.*", "\\1", AU),
            SR_ref = str_c(SR_ref, ", ", PY, ", ", JI, sep = "")) |>
     select(SR, SR_ref, TI, AU, JI, PY,
-           ref_type = type_ref, CR_ref = CR)
-# Finding right SR_ref in main dataset
+           ref_type = type_ref, CR_ref = CR) |>
+    filter(!is.na(SR_ref))
+  # Finding right SR_ref in main dataset
   references_df_1 <- tibble()
 
   list_ref_TI <-
@@ -209,4 +210,87 @@ get_asn <- function(data) {
     filter(communities == 1)
 
   return(asn)
+}
+
+get_citation_network <- function(scopus_df, references_df) {
+
+  sca_citation_network <-
+    references_df |>
+    filter(ref_type == 1) |>
+    select(SR, SR_ref) |>
+    na.omit() |>
+    as_tbl_graph()
+
+  sca_data_cleaned_1 <-
+    scopus_df |>
+    select(SR, TI, PY) |>
+    bind_rows(references_df |>
+                select(SR = SR_ref,
+                       TI,
+                       PY)) |>
+    dplyr::distinct() |>
+    dplyr::rename(name = SR) |>
+    filter(!duplicated(name))
+
+  sca_citation_network_1 <-
+    sca_citation_network |>
+    activate(nodes) |>
+    left_join(sca_data_cleaned_1, by = "name")
+
+}
+
+get_citation_network_tos <- function(citation_network) {
+
+  citation_network_gc <-
+    citation_network |>
+    activate(nodes) |>
+    mutate(component = group_components(type = "weak")) |>
+    filter(component == 1)
+
+  subfields <-
+    citation_network_gc |>
+    tidygraph::to_undirected() |>
+    activate(nodes) |>
+    mutate(subfield = tidygraph::group_louvain()) |>
+    as_tibble() |>
+    select(name, subfield)
+
+  citation_network_subfield <-
+    citation_network_gc |>
+    activate(nodes) |>
+    left_join(subfields, by = "name")
+
+  df_tos = tibble()
+
+  for (i in unique(subfields$subfield) ) {
+
+    df_1 <-
+      citation_network_subfield |>
+      activate(nodes) |>
+      filter(subfield == i) |>
+      mutate(in_degree = centrality_degree(mode = "out"),
+             out_degree = centrality_degree(mode = "in"),
+             bet = centrality_betweenness()) |>
+      as_tibble() |>
+      select(name,
+             in_degree,
+             out_degree,
+             bet)
+
+    df_tos <-
+      df_tos |>
+      bind_rows(df_1)
+
+  }
+
+  citation_network_tos <-
+    citation_network_subfield |>
+    activate(nodes) |>
+    left_join(df_tos, by = "name") |>
+    select(-component)
+
+}
+
+get_sap <- function(citation_network) {
+
 }

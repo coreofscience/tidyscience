@@ -279,7 +279,7 @@ get_citation_network_tos <- function(citation_network) {
       filter(subfield == i) |>
       mutate(in_degree = centrality_degree(mode = "out"),
              out_degree = centrality_degree(mode = "in"),
-             bet = centrality_degree(mode = "in")) |>
+             bet = centrality_betweenness()) |>
       as_tibble() |>
       select(name,
              in_degree,

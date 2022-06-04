@@ -104,31 +104,35 @@ get_references <- function(data) {
     select(TI) |>
     dplyr::distinct()
 
-  for (i in list_ref_TI$TI) {
-
-    df_1 <-
-      scopus_df |>
-      filter(TI == i)
-
-    if (length(df_1$TI) != 0) {
-
-      references_df$SR_ref[references_df$TI == df_1$TI] <- df_1$SR
-
-      references_df_1 <-
-        references_df |>
-        mutate(SR_ref = replace(SR_ref,
-                                TI == i,
-                                df_1 |>
-                                  filter(TI == i) |>
-                                  select(SR) |>
-                                  pull()))
-    }
-
-  }
-
+  # for (i in list_ref_TI$TI) {
+  #
+  #   df_1 <-
+  #     scopus_df |>
+  #     filter(TI == i)
+  #
+  #   if (length(df_1$TI) != 0) {
+  #
+  #     ref_1 <- references_df %>% filter(!is.na(TI))
+  #     ref_1$SR_ref[ref_1$TI == df_1$TI] <- df_1$SR
+  #
+  #     references_df$SR_ref[references_df$TI == df_1$TI] <- df_1$SR
+  #
+  #     references_df_1 <-
+  #       references_df |>
+  #       mutate(SR_ref = replace(SR_ref,
+  #                               TI == i,
+  #                               df_1 |>
+  #                                 filter(TI == i) |>
+  #                                 select(SR) |>
+  #                                 pull()))
+  #   }
+  #
+  # }
+  #
   # Finding duplicate titles in references with different SR_ref
+
   TI_ref_duplicates <-
-    references_df_1 |>
+    references_df |>
     filter(ref_type == 1) |>
     group_by(TI, SR_ref) |>
     count(TI, sort = TRUE) |>
@@ -146,7 +150,7 @@ get_references <- function(data) {
   for (i in TI_ref_duplicates$TI) {
 
     SR_ref_1 <-
-      references_df_1 |>
+      references_df |>
       filter(TI == i) |>
       select(SR_ref) |>
       group_by(SR_ref) |>
@@ -219,6 +223,7 @@ get_citation_network <- function(scopus_df, references_df) {
     filter(ref_type == 1) |>
     select(SR, SR_ref) |>
     na.omit() |>
+    dplyr::distinct() |>
     as_tbl_graph()
 
   sca_data_cleaned_1 <-
@@ -235,8 +240,8 @@ get_citation_network <- function(scopus_df, references_df) {
   sca_citation_network_1 <-
     sca_citation_network |>
     activate(nodes) |>
-    left_join(sca_data_cleaned_1, by = "name")
-
+    left_join(sca_data_cleaned_1, by = "name") |>
+    activate(edges)
 }
 
 get_citation_network_tos <- function(citation_network) {
@@ -245,7 +250,11 @@ get_citation_network_tos <- function(citation_network) {
     citation_network |>
     activate(nodes) |>
     mutate(component = group_components(type = "weak")) |>
-    filter(component == 1)
+    filter(component == 1) %>%
+    mutate(in_degree = centrality_degree(mode = "in"),
+           out_degree = centrality_degree(mode = "out")) |>
+    filter(!(in_degree == 1 & out_degree == 0)) |>
+    select(-in_degree, -out_degree)
 
   subfields <-
     citation_network_gc |>
@@ -270,12 +279,12 @@ get_citation_network_tos <- function(citation_network) {
       filter(subfield == i) |>
       mutate(in_degree = centrality_degree(mode = "out"),
              out_degree = centrality_degree(mode = "in"),
-             bet = centrality_betweenness()) |>
+             bet = centrality_degree(mode = "in")) |>
       as_tibble() |>
       select(name,
              in_degree,
-             out_degree,
-             bet)
+             out_degree
+      )
 
     df_tos <-
       df_tos |>
@@ -292,5 +301,132 @@ get_citation_network_tos <- function(citation_network) {
 }
 
 get_sap <- function(citation_network) {
+  nodes <-
+    citation_network %>%
+    activate(nodes) %>%
+    data.frame() %>%
+    rownames_to_column("rowid") %>%
+    mutate(rowid = as.integer(rowid))
+
+  edges <-
+    citation_network %>%
+    activate(edges) %>%
+    data.frame()
+
+  for (i in 1 : nrow(edges)){
+    from = edges[i, 1]
+    to   = edges[i, 2]
+    edges[i, 1] = nodes[from, 'name']
+    edges[i, 2] = nodes[to, 'name']
+  }
+
+  g <- graph_from_data_frame(edges, directed = TRUE) %>%
+    simplify()
+
+  # Se eliminan los vertices con indegree = 1 y con outdegree = 0
+  g1 <- delete.vertices(g,
+                        which(degree(g, mode = "in") == 1 &
+                                degree(g, mode = "out") == 0))
+
+  # Se escoge el componente mas grande conectado
+  g2 <- giant_component_extract(g1, directed = TRUE)
+  g2 <- g2[[1]]
+
+
+  metricas.red <- tibble(
+    id        = V(g2)$name,
+    indegree  = degree(g2, mode = "in"),
+    outdegree = degree(g2, mode = "out"),
+    bet       = betweenness(g2))
+
+
+  metricas.red <- metricas.red %>%
+    mutate(year = as.numeric(str_extract(id, "[0-9]{4}")))
+
+
+
+  # Clasificacion de las raices
+
+  Raices <- metricas.red[metricas.red$outdegree == 0, c("id","indegree")] %>%
+    arrange(desc(indegree))
+  Raices <- Raices[1:10,]
+
+  # Clasificacion de las hojas
+  Hojas.ext <- metricas.red[metricas.red$indegree == 0, c("id","outdegree","year")]
+  act.year  <- as.numeric(format(Sys.Date(),'%Y'))
+  Hojas.ext <- Hojas.ext %>%
+    mutate(antiguedad = act.year - year) %>%
+    arrange(antiguedad)
+  Hojas     <- filter(Hojas.ext, antiguedad <= 5)
+
+  # Se determina el numero del vertice de las Hojas
+  num.vertices.hojas <- c()
+  for (vertice in Hojas$id){
+    num.vertices.hojas <- c(num.vertices.hojas,which(metricas.red$id == vertice))
+  }
+
+  # Se determina el numero del vertice de las raices
+  num.vertices.raices <- c()
+  for (vertice in Raices$id){
+    num.vertices.raices <- c(num.vertices.raices,which(metricas.red$id == vertice))
+  }
+
+
+  # Calculo del SAP de las Hojas
+  SAP_hojas <- c()
+  for (vert in Hojas$id){
+    h <- get.all.shortest.paths(g2,
+                                from = vert,
+                                to   = Raices$id,
+                                mode = "out")
+
+    SAP_hojas   <- c(SAP_hojas, length(h[[1]]))
+  }
+
+  Hojas <- Hojas %>%
+    mutate(SAP = SAP_hojas) %>%
+    arrange(desc(SAP))
+
+  Hojas <- Hojas[1:60,] %>%
+    filter(SAP > 0)
+
+  Caminos   <- c()
+  for (vert in Hojas$id){
+    h <- get.all.shortest.paths(g2,
+                                from = vert,
+                                to   = Raices$id,
+                                mode = "out")
+    lista.nodos <- unique(unlist(h[1]))
+    lista.nodos <- lista.nodos[!(lista.nodos %in% num.vertices.raices)]
+    lista.nodos <- lista.nodos[!(lista.nodos %in% num.vertices.hojas)]
+    Caminos     <- c(Caminos,lista.nodos)
+  }
+
+  # Seleccion del tronco
+
+  Tronco     <- metricas.red[unique(Caminos), c("id","indegree","year")]
+  mas.nuevo  <- max(Tronco$year, na.rm = TRUE)
+  Tronco     <- Tronco %>%
+    mutate(antiguedad = mas.nuevo - year)
+
+  # Tree of science
+  Raices$TOS <- "Root"
+  Hojas$TOS  <- "Leaves"
+  Tronco$TOS <- "Trunk"
+
+  TOS   <- rbind(Raices[,c(1,3)], Tronco[,c(1,5)], Hojas[,c(1,6)])
+
+  tos_articles <- c(TOS['id'])
+  titles       <- c()
+  PY           <- c()
+  for (id in tos_articles$id){
+    mask <- nodes['name'] == id
+    titles <- c(titles, nodes[mask,'TI'])
+    PY     <- c(PY, nodes[mask,'PY'])
+  }
+  TOS <- TOS %>%
+    mutate(Title = titles, PY = PY)
+
+  return(TOS)
 
 }

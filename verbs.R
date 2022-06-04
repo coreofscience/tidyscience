@@ -277,13 +277,14 @@ get_citation_network_tos <- function(citation_network) {
       citation_network_subfield |>
       activate(nodes) |>
       filter(subfield == i) |>
-      mutate(in_degree = centrality_degree(mode = "out"),
-             out_degree = centrality_degree(mode = "in"),
+      mutate(in_degree = centrality_degree(mode = "in"),
+             out_degree = centrality_degree(mode = "out"),
              bet = centrality_betweenness()) |>
       as_tibble() |>
       select(name,
              in_degree,
-             out_degree
+             out_degree,
+             bet
       )
 
     df_tos <-

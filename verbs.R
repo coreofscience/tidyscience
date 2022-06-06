@@ -2,6 +2,7 @@ get_references <- function(data) {
 
   references_df <-
     data |>
+    filter(!duplicated(TI)) |>
     select(SR, CR) |>
     na.omit()  |>
     separate_rows(CR, sep = "; ") |>
@@ -96,13 +97,13 @@ get_references <- function(data) {
            ref_type = type_ref, CR_ref = CR) |>
     filter(!is.na(SR_ref))
   # Finding right SR_ref in main dataset
-  references_df_1 <- tibble()
-
-  list_ref_TI <-
-    references_df |>
-    filter(ref_type == 1) |>
-    select(TI) |>
-    dplyr::distinct()
+  # references_df_1 <- tibble()
+  #
+  # list_ref_TI <-
+  #   references_df |>
+  #   filter(ref_type == 1) |>
+  #   select(TI) |>
+  #   dplyr::distinct()
 
   # for (i in list_ref_TI$TI) {
   #
@@ -128,7 +129,7 @@ get_references <- function(data) {
   #   }
   #
   # }
-  #
+
   # Finding duplicate titles in references with different SR_ref
 
   TI_ref_duplicates <-
@@ -166,7 +167,34 @@ get_references <- function(data) {
 
   }
 
-  return(references_df = df_1)
+  # Converting long journal names in short names.
+
+  df_2 <-
+    scopus_df |>
+    select(JI, SO) |>
+    dplyr::distinct() |>
+    filter(!duplicated(SO)) |>
+    mutate(JI = str_remove_all(JI, "\\."),
+           JI = str_trim(JI)) |>
+    rename(JI_main = JI)
+
+  df_3 <-
+    references_df |>
+    left_join(df_2, by = c("JI" = "SO")) |>
+    mutate(JI_main = if_else(is.na(JI_main), JI, JI_main),
+           SR_new = if_else(ref_type == 1,
+                            str_extract(SR_ref, "([^,]*,[^,]*)"),
+                            SR_ref),
+           SR_new = if_else(ref_type == 1,
+                            str_c(SR_new, JI_main, sep = ", "),
+                            SR_ref),
+           SR_new = if_else(is.na(SR_new), SR_ref,
+                            SR_new)) |>
+    filter(!is.na(SR_new)) |>
+    select(SR, SR_ref = SR_new, TI, AU, JI, PY, CR_ref, ref_type)
+
+
+  return(references_df = df_3)
 }
 
 
@@ -239,9 +267,11 @@ get_citation_network <- function(scopus_df, references_df) {
 
   sca_citation_network_1 <-
     sca_citation_network |>
+    convert(to_simple) |>
     activate(nodes) |>
-    left_join(sca_data_cleaned_1, by = "name") |>
-    activate(edges)
+    left_join(sca_data_cleaned_1, by = "name")
+
+  return(citation_network = sca_citation_network_1)
 }
 
 get_citation_network_tos <- function(citation_network) {
@@ -321,8 +351,8 @@ get_sap <- function(citation_network) {
     edges[i, 2] = nodes[to, 'name']
   }
 
-  g <- graph_from_data_frame(edges, directed = TRUE) %>%
-    simplify()
+  # g <- graph_from_data_frame(edges, directed = TRUE) %>%
+  #   simplify()
 
   # Se eliminan los vertices con indegree = 1 y con outdegree = 0
   g1 <- delete.vertices(g,
@@ -330,8 +360,8 @@ get_sap <- function(citation_network) {
                                 degree(g, mode = "out") == 0))
 
   # Se escoge el componente mas grande conectado
-  g2 <- giant_component_extract(g1, directed = TRUE)
-  g2 <- g2[[1]]
+  # g2 <- giant_component_extract(g1, directed = TRUE)
+  # g2 <- g2[[1]]
 
 
   metricas.red <- tibble(

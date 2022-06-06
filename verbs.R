@@ -329,6 +329,8 @@ get_citation_network_tos <- function(citation_network) {
     left_join(df_tos, by = "name") |>
     select(-component)
 
+  return(citation_network_tos = citation_network_tos)
+
 }
 
 get_sap <- function(citation_network_tos) {

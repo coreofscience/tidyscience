@@ -331,7 +331,7 @@ get_citation_network_tos <- function(citation_network) {
 
 }
 
-get_sap <- function(citation_network) {
+get_sap <- function(citation_network_tos) {
   nodes <-
     citation_network %>%
     activate(nodes) %>%
@@ -339,40 +339,57 @@ get_sap <- function(citation_network) {
     rownames_to_column("rowid") %>%
     mutate(rowid = as.integer(rowid))
 
-  edges <-
-    citation_network %>%
-    activate(edges) %>%
-    data.frame()
+  # edges <-
+  #   citation_network %>%
+  #   activate(edges) %>%
+  #   data.frame()
+  #
+  # for (i in 1 : nrow(edges)){
+  #   from = edges[i, 1]
+  #   to   = edges[i, 2]
+  #   edges[i, 1] = nodes[from, 'name']
+  #   edges[i, 2] = nodes[to, 'name']
+  # }
 
-  for (i in 1 : nrow(edges)){
-    from = edges[i, 1]
-    to   = edges[i, 2]
-    edges[i, 1] = nodes[from, 'name']
-    edges[i, 2] = nodes[to, 'name']
-  }
+  edges <-
+    citation_network_tos |>
+    as.igraph() |>
+    get.edgelist()
+
 
   # g <- graph_from_data_frame(edges, directed = TRUE) %>%
   #   simplify()
 
-  # Se eliminan los vertices con indegree = 1 y con outdegree = 0
-  g1 <- delete.vertices(g,
-                        which(degree(g, mode = "in") == 1 &
-                                degree(g, mode = "out") == 0))
+  # # Se eliminan los vertices con indegree = 1 y con outdegree = 0
+  # g1 <- delete.vertices(g,
+  #                       which(degree(g, mode = "in") == 1 &
+  #                               degree(g, mode = "out") == 0))
 
   # Se escoge el componente mas grande conectado
   # g2 <- giant_component_extract(g1, directed = TRUE)
   # g2 <- g2[[1]]
 
 
-  metricas.red <- tibble(
-    id        = V(g2)$name,
-    indegree  = degree(g2, mode = "in"),
-    outdegree = degree(g2, mode = "out"),
-    bet       = betweenness(g2))
+  # metricas.red <- tibble(
+  #   id        = V(g2)$name,
+  #   indegree  = degree(g2, mode = "in"),
+  #   outdegree = degree(g2, mode = "out"),
+  #   bet       = betweenness(g2))
 
+  metricas.red <-
+    citation_network_tos |>
+    activate(nodes) |>
+    mutate(id = .tidygraph_node_index,
+           indegree = centrality_degree(mode = "in"),
+           outdegree = centrality_degree(mode = "out"),
+           betweenness = centrality_betweenness(),
+           year = PY) |>
+    as_tibble() |>
+    select(id, indegree, outdegree, bet = betweenness, year)
 
-  metricas.red <- metricas.red %>%
-    mutate(year = as.numeric(str_extract(id, "[0-9]{4}")))
+  #
+  #   metricas.red <- metricas.red %>%
+  #     mutate(year = as.numeric(str_extract(id, "[0-9]{4}")))
 
 
 
@@ -406,7 +423,7 @@ get_sap <- function(citation_network) {
   # Calculo del SAP de las Hojas
   SAP_hojas <- c()
   for (vert in Hojas$id){
-    h <- get.all.shortest.paths(g2,
+    h <- get.all.shortest.paths(citation_network_tos,
                                 from = vert,
                                 to   = Raices$id,
                                 mode = "out")
@@ -423,7 +440,7 @@ get_sap <- function(citation_network) {
 
   Caminos   <- c()
   for (vert in Hojas$id){
-    h <- get.all.shortest.paths(g2,
+    h <- get.all.shortest.paths(citation_network_tos,
                                 from = vert,
                                 to   = Raices$id,
                                 mode = "out")
@@ -447,17 +464,14 @@ get_sap <- function(citation_network) {
 
   TOS   <- rbind(Raices[,c(1,3)], Tronco[,c(1,5)], Hojas[,c(1,6)])
 
-  tos_articles <- c(TOS['id'])
-  titles       <- c()
-  PY           <- c()
-  for (id in tos_articles$id){
-    mask <- nodes['name'] == id
-    titles <- c(titles, nodes[mask,'TI'])
-    PY     <- c(PY, nodes[mask,'PY'])
-  }
-  TOS <- TOS %>%
-    mutate(Title = titles, PY = PY)
+  TOS <-
+    TOS |>
+    left_join(citation_network_tos |>
+                activate(nodes) |>
+                as_tibble() |>
+                select(id = .tidygraph_node_index, TI, PY, name),
+              by = "id")
 
-  return(TOS)
+return(TOS)
 
 }

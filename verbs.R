@@ -335,7 +335,7 @@ get_citation_network_tos <- function(citation_network) {
 
 get_sap <- function(citation_network_tos) {
   nodes <-
-    citation_network %>%
+    citation_network_tos %>%
     activate(nodes) %>%
     data.frame() %>%
     rownames_to_column("rowid") %>%

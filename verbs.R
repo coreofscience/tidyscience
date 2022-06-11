@@ -170,7 +170,7 @@ get_references <- function(data) {
   # Converting long journal names in short names.
 
   df_2 <-
-    scopus_df |>
+    data |>
     select(JI, SO) |>
     dplyr::distinct() |>
     filter(!duplicated(SO)) |>

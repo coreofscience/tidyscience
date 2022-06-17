@@ -134,7 +134,7 @@ get_references <- function(data) {
 
   TI_ref_duplicates <-
     references_df |>
-    filter(ref_type == 1) |>
+    filter(ref_type == 1 | ref_type == 2) |>
     group_by(TI, SR_ref) |>
     count(TI, sort = TRUE) |>
     ungroup() |>
